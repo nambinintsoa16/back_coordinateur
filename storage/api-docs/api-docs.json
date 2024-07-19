@@ -1,0 +1,115 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "coordinateur combo",
+        "version": "0.1"
+    },
+    "paths": {
+        "/api/auth/login": {
+            "post": {
+                "summary": "Se connecter",
+                "operationId": "8dcb70df1020986038d098cc08d05dae",
+                "requestBody": {
+                    "description": "Informations ",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "matricule": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Connectes"
+                    },
+                    "404": {
+                        "description": "E-mail ou mot de passe n'existe pas"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "summary": "Se deconnecter",
+                "operationId": "69281b12abb272c76871f19cb17ca563",
+                "responses": {
+                    "200": {
+                        "description": "Vous etes deconnectes"
+                    },
+                    "401": {
+                        "description": "Accès interdit pour les non-Connectes"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/chiffreAffaire": {
+            "get": {
+                "summary": "Afficher les chiffre affaire",
+                "operationId": "73a4e48b6494189d8b03e6f1659336be",
+                "responses": {
+                    "200": {
+                        "description": "chiffre affaire trouvés"
+                    },
+                    "404": {
+                        "description": "chiffre affaire non trouvés"
+                    },
+                    "403": {
+                        "description": "Accès interdit pour les non-administrateurs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/user": {
+            "get": {
+                "summary": "Afficher les utilisateurs",
+                "operationId": "a65897868f1d4105404848067624d207",
+                "responses": {
+                    "200": {
+                        "description": "Utilisateurs trouvés"
+                    },
+                    "404": {
+                        "description": "Utilisateurs non trouvés"
+                    },
+                    "403": {
+                        "description": "Accès interdit pour les non-administrateurs"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format (Bearer <token>)",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    }
+}

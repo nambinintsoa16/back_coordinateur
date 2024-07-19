@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Facture extends Model
+{
+    use HasFactory;
+    protected $table = 'facture';
+    public function detailventes()
+    {
+        return $this->hasMany(DetailVente::class, 'Facture', 'Id');
+    }
+
+    public function livraison()
+    {
+        return $this->hasOne(Livraison::class, 'Id_facture', 'Id_facture');
+    }
+
+    public function personnel()
+    {
+        return $this->belongsTo(Personnel::class, 'Matricule_personnel', 'Matricule');
+    }
+}
