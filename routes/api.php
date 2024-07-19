@@ -40,7 +40,7 @@ Route::middleware('api')->prefix('auth')->group(function () {
 
 Route::middleware('api')->prefix('chiffreAffaire')->group(function () {
     Route::controller(ChiffreAffaireController::class)->group(function () {
-        Route::get('', 'getChiffreAffaire')->name('login');
+        Route::get('', 'getChiffreAffaire')->name('chiffre_affaire');
     });
 });
 

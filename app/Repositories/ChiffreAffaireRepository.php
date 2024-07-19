@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Facture;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ChiffreAffaireRepository implements ChiffreAffaireRepositoryInterface
 {
@@ -18,23 +19,47 @@ class ChiffreAffaireRepository implements ChiffreAffaireRepositoryInterface
 
     public function getChiffreAffaire()
     {
-        $date = Carbon::create(2024, 7, 11)->toDateString();
-        $demain = Carbon::create(2024, 7, 12)->toDateString();
+        $date = Carbon::create(2024, 5, 6)->toDateString();
+        $demain = Carbon::create(2024, 5, 7)->toDateString();
 
         //$date = Carbon::today()->toDateString();
         //$demain = Carbon::tomorrow()->toDateString();
 
-        $facturesLivraison = Facture::with(['detailventes.prix', 'livraison'])
-            ->whereHas('livraison', function ($query) use ($date) {
-                $query->where('date_de_livraison', $date);
-            })->get();
+        // $facturesLivraison = Facture::with(['detailventes.prix', 'livraison'])
+        //     ->whereHas('livraison', function ($query) use ($date) {
+        //         $query->where('date_de_livraison', $date);
+        //     })->get();
+        
+        $facturesLivraison = Facture::leftJoin('livraison', 'livraison.id_facture', '=', 'facture.id_facture')
+                                                ->join('detailvente', 'detailvente.facture', '=', 'facture.id')
+                                                ->join('prix', 'prix.id', '=', 'detailvente.id_prix')
+                                                ->whereNotNull('livraison.id_facture')
+                                                ->where('date_de_livraison', $date)
+                                                ->get();
+        
+        
+        // $facturesLivraisonDemain = Facture::with(['detailventes.prix', 'livraison'])
+        //     ->whereHas('livraison', function ($query) use ($demain) {
+        //         $query->where('date_de_livraison', $demain);
+        //     })->get();
+        
+        $facturesLivraisonDemain = Facture::leftJoin('livraison', 'livraison.id_facture', '=', 'facture.id_facture')
+                                            ->join('detailvente', 'detailvente.facture', '=', 'facture.id')
+                                            ->join('prix', 'prix.id', '=', 'detailvente.id_prix')
+                                            ->whereNotNull('livraison.id_facture')
+                                            ->where('date_de_livraison', $demain)
+                                            ->get();
+        
 
-        $facturesLivraisonDemain = Facture::with(['detailventes.prix', 'livraison'])
-            ->whereHas('livraison', function ($query) use ($demain) {
-                $query->where('date_de_livraison', $demain);
-            })->get();
+        // $facturesDate = Facture::with(['detailventes.prix', 'livraison'])
+        //     ->where('date', $date)
+        //     ->get();
 
-        $facturesDate = Facture::with(['detailventes.prix', 'livraison'])
+        
+        $facturesDate = Facture::leftJoin('livraison', 'livraison.id_facture', '=', 'facture.id_facture')
+            ->join('detailvente', 'detailvente.facture', '=', 'facture.id')
+            ->join('prix', 'prix.id', '=', 'detailvente.id_prix')
+            ->whereNotNull('livraison.id_facture')
             ->where('date', $date)
             ->get();
 
@@ -46,29 +71,50 @@ class ChiffreAffaireRepository implements ChiffreAffaireRepositoryInterface
         $livraison_demain = 0;
         $taux = 0;
 
+        error_log("Eto izao - 2");
+
         foreach ($facturesLivraison as $facture) {
-            $this->calculMontants($facture, $date, $previsionnel, $livre_terrain, $non_livre);
+            $this->calculMontant($facture, $date, $livraison_previsionnel, $livre_terrain, $non_livre);
         }
 
+        // foreach ($facturesLivraisonDemain as $facture) {
+        //     foreach ($facture->detailventes as $detailVente) {
+        //         $montant = $detailVente->Quantite * $detailVente->prix->Prix_detail;
+        //         if ($facture->Id_de_la_mission == "FACEBOOK") {
+        //             $livraison_demain += $montant;
+        //         }
+        //     }
+        // }
+
+        // foreach ($facturesDate as $facture) {
+        //     foreach ($facture->detailventes as $detailVente) {
+        //         $montant = $detailVente->Quantite * $detailVente->prix->Prix_detail;
+        //         if ($facture->Id_de_la_mission == "FACEBOOK") {
+        //             $livraison_previsionnel += $montant;
+        //             if ($facture->Status === 'livre') {
+        //                 $livre_reel += $montant;
+        //             }
+        //         }
+        //     }
+        // }
+
         foreach ($facturesLivraisonDemain as $facture) {
-            foreach ($facture->detailventes as $detailVente) {
-                $montant = $detailVente->Quantite * $detailVente->prix->Prix_detail;
+            
+                $montant = $facture->Quantite * $facture->Prix_detail;
                 if ($facture->Id_de_la_mission == "FACEBOOK") {
                     $livraison_demain += $montant;
                 }
-            }
+            
         }
 
         foreach ($facturesDate as $facture) {
-            foreach ($facture->detailventes as $detailVente) {
-                $montant = $detailVente->Quantite * $detailVente->prix->Prix_detail;
+                $montant = $facture->Quantite * $facture->Prix_detail;
                 if ($facture->Id_de_la_mission == "FACEBOOK") {
-                    $livraison_previsionnel += $montant;
+                    $previsionnel += $montant;
                     if ($facture->Status === 'livre') {
                         $livre_reel += $montant;
                     }
                 }
-            }
         }
 
         if ($livre_reel != 0 && $previsionnel != 0) {
@@ -84,15 +130,15 @@ class ChiffreAffaireRepository implements ChiffreAffaireRepositoryInterface
             'livraison_demain' => $livraison_demain,
             'taux' => $taux,
             'tableData' =>[
-            'matricule' =>'VP0080',
-            'nom' =>'Sitraka', 
-            'previsionnel' => $previsionnel,
-            'livre_terrain' => $livre_terrain,
-            'non_livre' => $non_livre,
-            'livre_reel' => $livre_reel,
-            'livraison_previsionnel' => $livraison_previsionnel,
-            'livraison_demain' => $livraison_demain,
-            'taux' => $taux,
+                'matricule' =>'VP0080',
+                'nom' =>'Sitraka', 
+                'previsionnel' => $previsionnel,
+                'livre_terrain' => $livre_terrain,
+                'non_livre' => $non_livre,
+                'livre_reel' => $livre_reel,
+                'livraison_previsionnel' => $livraison_previsionnel,
+                'livraison_demain' => $livraison_demain,
+                'taux' => $taux,
             ] 
         ];
     }
@@ -117,5 +163,26 @@ class ChiffreAffaireRepository implements ChiffreAffaireRepositoryInterface
                 }
             }
         }
+    }
+
+    private function calculMontant($facture, $date, &$previsionnel, &$livre_terrain, &$non_livre)
+    {
+            $montant = $facture->Quantite * $facture->Prix_detail;
+            if ($facture->date_de_livraison == $date) {
+                if ($facture->Id_de_la_mission == "FACEBOOK") {
+                    $previsionnel += $montant;
+
+                    if (in_array($facture->Status, ['confirmer', 'en_attente'])) {
+                        $non_livre += $montant;
+                    }
+
+                    if ($facture->Status === 'livre') {
+                        $livre_terrain += $montant;
+                    }
+                } else {
+                    $livre_terrain += $montant;
+                }
+            }
+        
     }
 }
